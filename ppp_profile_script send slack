@@ -1,0 +1,3 @@
+:local caller [/ppp active get [find name=$user] caller-id]
+:local last [/ppp secret get [find name=$user] last-logged-out]
+/tool fetch http-method=post  http-data="payload={\"channel\": \"#vpn\", \"username\": \"VPN\", \"text\": \" USER_UP:  $user  \nip address:  $caller  \nlastlogin: $last\", \"icon_emoji\": \":key:\"}" https://hooks.slack.com/services/11111

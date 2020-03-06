@@ -1,0 +1,16 @@
+:if ($leaseBound = 1) do={
+	/ip dhcp-server lease;
+	:foreach i in=[find dynamic=yes] do={
+		:local dhcpip 
+		:set dhcpip [ get $i address ];
+		:local clientid
+		:set clientid [get $i host-name];
+
+		:if ($leaseActIP = $dhcpip) do={
+			:local comment "New IP"
+			:set comment ( $comment . ": " .  $dhcpip . ": " . $clientid);
+			/log error $comment;
+			/tool fetch http-method=post  http-data="payload={\"channel\": \"#dhcp\", \"username\": \"DHCP\", \"text\": \"IP:$leaseActIP;$leaseActMAC;SRV:$leaseServerName;HN:$clientid\", \"icon_emoji\": \":ghost:\"}" https://hooks.slack.com/services/11111
+		}
+	}
+}

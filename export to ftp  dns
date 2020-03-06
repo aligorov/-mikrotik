@@ -1,0 +1,7 @@
+:local ftphost "10.120.220.11211"
+:local ftpuser "ftp"
+:local ftppassword "111111"
+:local ftppath "ftp"
+if ([:len [/file find name=dns_s.rsc]]>0) do={/file remove dns_s.rsc}
+/ip dns static export file=dns_s.rsc
+/tool fetch address="$ftphost" src-path=$fname1 user="$ftpuser" mode=ftp password="$ftppassword" dst-path="$ftppath/dns_s.rsc" upload=yes

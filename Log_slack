@@ -1,0 +1,45 @@
+:global lastTime
+:global messageencoded ""
+:global output
+:local identity [/system identity get name]
+
+:local currentBuf [ :toarray [ /log find topics~"interface" || message~"down" || message~"up" || message~"[Ff]ailed" || message~"disabled" && message~"^[^fetch]" ] ];
+:local currentLineCount [ :len $currentBuf ];
+if ($currentLineCount > 0) do={
+   :local currentTime "$[ /log get [ :pick $currentBuf ($currentLineCount -1) ] time ]";
+   :if ([:len $currentTime] = 15 ) do={
+      :set currentTime [ :pick $currentTime 7 15 ];
+   }
+   :set output "$currentTime - $[/log get [ :pick $currentBuf ($currentLineCount-1) ] message ]";
+   :for i from=0 to=([:len $output] - 1) do={
+      :local char [:pick $output $i]
+      :if ($char = " ") do={
+         :set $char "%20"
+      }
+      :if ($char = "-") do={
+         :set $char "%2D"
+      }
+      :if ($char = "#") do={
+         :set $char "%23"
+      }
+      :if ($char = "+") do={
+         :set $char "%2B"
+      }
+      :if ($char = ",") do={
+         :set $char "%2C"
+      }
+      :if ($char = ">") do={
+         :set $char "%3E"
+      }
+      :if ($char = ":") do={
+         :set $char "%3A"
+      }
+      :set messageencoded ($messageencoded . $char)
+   }
+   :if (([:len $lastTime] < 1) || (([:len $lastTime] > 0) && ($lastTime != $currentTime))) do={
+      :set lastTime $currentTime ;
+
+/tool fetch http-method=post  http-data="payload={\"channel\": \"#log_mikrotik\", \"username\": \"LOG\", \"text\": \"$identity\\\\log--$messageencoded\", \"icon_emoji\": \"::):\"}" https://hooks.slack.com/services/11111
+      /log info "LogToSlack sent";
+   }
+}

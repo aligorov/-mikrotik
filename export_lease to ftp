@@ -1,0 +1,7 @@
+:local ftphost "102.130.240.112"
+:local ftpuser "ftp"
+:local ftppassword "13214"
+:local ftppath "ftp"
+if ([:len [/file find name=leases.rsc]]>0) do={/file remove leases.rsc}
+/ip dhcp-server lease export file=leases.rsc
+/tool fetch address="$ftphost" src-path=$fname1 user="$ftpuser" mode=ftp password="$ftppassword" dst-path="$ftppath/leases.rsc" upload=yes

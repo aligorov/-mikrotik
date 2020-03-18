@@ -1,0 +1,71 @@
+# UPS-Script powerfail
+# (c) steinmann und weidinger OEG
+# www.stone-rich.at
+#
+# Watches ups status and sends emails on power failure and low battery.
+# This script will FAIL if:
+# - Policies write, test, and read are not set
+# - The system name contains non-standard characters (space, /, ...)
+# - The UPS is not named ups1 (fixed by adding configurable variable)
+#
+# This script was tested up to ROS 3.23
+# user-configurable parameters below:
+
+:local mailserver [:resolve mailserver];
+:local mailfrom "from@domain.xy";
+:local mailto "to@domain.xy";
+:local upsName "ups1";
+
+#
+# do NOT make changes below!
+#
+
+:global flagonbatt;
+:global flagbattlow;
+
+:local battalarm 15;
+:local battok 40;
+
+:local curonbatt;
+:local curcharge;
+
+:local sysname [/system identity get name];
+:local datetime "$[/system clock get date] $[/system clock get time]";
+
+# First run? If so, we need to initialize the global flags
+:if ([:typeof $flagonbatt]="nothing") do={:set flagonbatt 0}
+:if ([:typeof $flagbattlow]="nothing") do={:set flagbattlow 0}
+
+:set curonbatt false;
+:set curcharge 100;
+/system ups monitor [/system ups find name=$upsName] once do={
+  :set curonbatt $"on-battery"; :set curcharge $"battery-charge";
+}
+
+:if (($curonbatt) && ($flagonbatt=0)) do={
+  :set flagonbatt 1;
+ /tool e-mail send from=$mailfrom  to=$mailto server=$mailserver subject="$sysname: Power failure!" \
+    body="$sysname  is on battery since $datetime";
+  :log info "Power-Fail: EMail sent to $mailto";
+}
+
+:if ((!$curonbatt) && ($flagonbatt=1)) do={
+ :set flagonbatt 0;
+ /tool e-mail send from=$mailfrom  to=$mailto server=$mailserver subject="$sysname: Power is back" \
+    body="$sysname is back on power since $datetime";
+  :log info "Power-Restore: Email sent to $mailto";
+}
+
+:if (($curcharge <= $battalarm) && ($flagbattlow=0)) do={
+  :set flagbattlow 1;
+  /tool e-mail send from=$mailfrom  to=$mailto server=$mailserver subject="$sysname: Low battery!" \
+    body="$sysname battery is at $curcharge %! $datetime";
+  :log info "Batt-Low: Email sent to $mailto";
+}
+
+:if (($curcharge >= $battok) && ($flagbattlow=1)) do={
+  :set flagbattlow 0;
+  /tool e-mail send from=$mailfrom  to=$mailto server=$mailserver subject="$sysname: Battery recharged" \
+    body="$sysname Battery recharged to $curcharge% $datetime";
+  :log info "Batt-Recharged: Email sent to $mailto";
+}
